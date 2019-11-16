@@ -1,0 +1,133 @@
+
+<html>
+  <head>
+    <title>WebSocket Test</title>
+  </head>
+  <body>
+    
+	<table>
+	
+		
+	<tr>
+	<td>InputData :</td>
+	<td><textarea id="name" cols=100 rows=10 ></textarea></td>
+	</tr>
+	
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	</tr>
+
+	<tr>
+	<td>
+	<input type="button" value="FormSign" onClick='call("signData",document.getElementById("name").value)'>
+	</td>
+    </tr>
+
+	<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	</tr>
+	<tr>
+	<td>Output signedData :</td>
+	<td><textarea id="signData" cols=100 rows=20 readonly = "readonly"></textarea></td>
+	</tr>
+	
+	<tr>
+	<td>signature :</td>
+	<td><textarea id="signature" cols=100 rows=20 readonly = "readonly"></textarea></td>
+	</tr>
+
+	</table>
+	
+  </body>
+  
+  <script type="text/javascript">
+var connection = new WebSocket('wss://127.0.0.1:1585');
+
+connection.onopen = function () {
+  console.log('Connection Opened');
+};
+connection.onerror = function (error) 
+{
+  alert('Please check the server connection1: ' + error);
+  document.getElementById("signData").value=error;
+};
+connection.onmessage = function (e) 
+{
+	if(e.data.indexOf("subProtocol")==-1)
+    alert(e.data);
+};
+
+
+function call(txf1,msg)
+{
+connection.send(msg);
+connection.onerror = function (error) 
+{
+  alert('Please check the server connection2: ' + error);
+  document.getElementById("signData").value=error;
+};
+connection.onmessage = function (e) 
+{
+	  if(e.data.indexOf("subProtocol")==-1)
+	  {
+	  
+	  if(e.data.length == 0 || e.data == "" || e.data == null)
+	  {
+	    // Not Signed, do not proceed.
+		document.getElementById(txf1).value=e.data;
+	  }
+	  else{
+	  
+	  var nullData = e.data.substring(0, 14);
+	  var errorData = e.data.substring(0, 4);
+	  
+	  if(e.data == "signing canceled" || e.data == "signing failed" || nullData == "signature= null" || errorData == "error")
+	{
+		// Not Signed, do not proceed.
+		document.getElementById(txf1).value=e.data;
+				
+	}
+	else
+	{
+	  
+	   document.getElementById(txf1).value=e.data;
+	   
+	   var respData = e.data;
+	    // getting signature value
+	   
+	   var siglast = respData.indexOf("SerialNo");
+	   var signature = respData.substring(10,siglast);
+	   document.getElementById("signature").value=signature;
+	   
+	   // getting serial no
+	   
+	   var serialfirst = respData.indexOf("SerialNo");
+	   var seriallast = respData.indexOf("CommonName");
+	   var serial = respData.substring(serialfirst + 9,seriallast);
+	   alert(serial);
+	   
+	   // getting comman name
+	   
+	   var commanfirst = respData.indexOf("CommonName");
+	   var commanlast = respData.indexOf("IssuerName");
+	   var comman = respData.substring(commanfirst + 11,commanlast);
+	   alert(comman);
+	   
+	   //getting cert class
+	   
+	   var certfirst = respData.indexOf("SigningTime");
+	   var certlast = respData.length;
+	   var cert = respData.substring(certfirst + 12,certlast);
+	   alert(cert);
+	   }
+	   }
+	   }
+	   
+};
+}
+ 
+
+</script>
+  
+</html>
